@@ -1,0 +1,35 @@
+{
+    "name": "artflow-studio/uploader",
+    "description": "A professional Livewire file uploader with built-in image cropping, progress tracking, and perfect instance isolation.",
+    "version": "0.1.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ArtFlow Studio"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "*",
+        "livewire/livewire": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ArtflowStudio\\FileUploader\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ArtflowStudio\\FileUploader\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ArtflowStudio\\FileUploader\\FileUploaderServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AF Uploader - Status Showcase</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        body { background: #050505; color: #fff; padding: 40px; font-family: sans-serif; }
+        .showcase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        .status-demo-card { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #1a1a1a; display: flex; flex-direction: column; align-items: center; }
+        h4 { margin-bottom: 20px; font-weight: 300; color: #888; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+        button { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        button:hover { background: #444; }
+    </style>
+</head>
+<body>
+
+    <h1 style="font-weight: 300; margin-bottom: 40px;">Status & Progress Showcase</h1>
+
+    <div class="showcase-grid">
+        
+        <!-- Uploading Simulation -->
+        <div class="status-demo-card">
+            <h4>Uploading State</h4>
+            <div class="af-dropzone af-dz-squared" id="dz-uploading">
+                <span class="af-label">Simulated Large File</span>
+                <input type="file" af-cropper="true" id="input-uploading" hidden>
+            </div>
+            <div class="controls">
+                <button onclick="simulateUpload('input-uploading')">Start Progress</button>
+            </div>
+        </div>
+
+        <!-- Success Animation -->
+        <div class="status-demo-card">
+            <h4>Success State (Auto-Closing)</h4>
+            <div class="af-dropzone af-dz-circled" id="dz-success">
+                <p>Profile Avatar</p>
+                <input type="file" af-cropper="true" data-af-is-circle="true" id="input-success" hidden>
+            </div>
+            <div class="controls">
+                <button onclick="simulateStatus('input-success', 'Uploaded!', 'success')">Pop Success</button>
+            </div>
+        </div>
+
+        <!-- Danger/Error Animation -->
+        <div class="status-demo-card">
+            <h4>Error/Danger State</h4>
+            <div class="af-dropzone af-dz-rect" id="dz-error">
+                <p>Corporate Banner</p>
+                <input type="file" af-cropper="true" data-af-ratio="16/9" id="input-error" hidden>
+            </div>
+            <div class="controls">
+                <button onclick="simulateStatus('input-error', 'File too large (Max 2MB)', 'danger')">Trigger Error</button>
+            </div>
+        </div>
+
+        <!-- Info/Wait State -->
+        <div class="status-demo-card">
+            <h4>Processing/Info State</h4>
+            <div class="af-dropzone af-dz-inline" id="dz-info">
+                <span>Verification Document</span>
+                <input type="file" af-cropper="true" data-af-cropper="false" id="input-info" hidden>
+            </div>
+            <div class="controls">
+                <button onclick="simulateStatus('input-info', 'Analyzing document...', 'info')">Show Info</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="src/index.js"></script>
+    <script>
+        function simulateUpload(inputId) {
+            const input = document.getElementById(inputId);
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    window.AF_Cropper.setProgress(input, 100);
+                    window.AF_Cropper.showStatus(input, "Upload Complete", "success");
+                } else {
+                    window.AF_Cropper.setProgress(input, progress);
+                }
+            }, 300);
+        }
+
+        function simulateStatus(inputId, text, type) {
+            const input = document.getElementById(inputId);
+            window.AF_Cropper.showStatus(input, text, type);
+        }
+    </script>
+</body>
+</html>

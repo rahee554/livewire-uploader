@@ -1,0 +1,20 @@
+{
+  "name": "af-cropper-uploader",
+  "version": "1.0.0",
+  "description": "Mobile-first, client-side canvas cropper and uploader with Laravel/Livewire integration.",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step configured yet.'"
+  },
+  "keywords": [
+    "cropper",
+    "uploader",
+    "canvas",
+    "mobile-first",
+    "laravel",
+    "livewire"
+  ],
+  "author": "",
+  "license": "MIT"
+}

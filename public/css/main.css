@@ -1,0 +1,1240 @@
+/* AF Uploader Core Styles V4.0 - Professional Edition */
+:root {
+    --af-bg: #f8f9fa;
+    --af-surface: #ffffff;
+    --af-border: #e2e8f0;
+    --af-primary: #1e293b;
+    --af-secondary: #64748b;
+    --af-accent: #3b82f6;
+    --af-danger: #ef4444;
+    --af-success: #10b981;
+    --af-warning: #f59e0b;
+    --af-pdf: #ef4444;
+    --af-video: #8b5cf6;
+    --af-doc: #3b82f6;
+    --af-radius: 0.75em;
+    --af-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --af-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --af-modal-glass: rgba(0, 0, 0, 0.75);
+}
+
+/* Dark Mode Support - .af-dark class */
+.af-dark,
+html.dark,
+body.dark {
+    --af-bg: #1a1a1a;
+    --af-surface: #262626;
+    --af-border: #404040;
+    --af-primary: #fafafa;
+    --af-secondary: #a3a3a3;
+}
+
+/* Bootstrap 5 Dark Mode Support - data-bs-theme="dark" */
+[data-bs-theme="dark"],
+[data-bs-theme="dark"] .af-uploader-wrapper,
+.dark,
+.dark .af-uploader-wrapper {
+    --af-bg: #1a1a1a;
+    --af-surface: #262626;
+    --af-border: #404040;
+    --af-primary: #fafafa;
+    --af-secondary: #a3a3a3;
+}
+
+/* Tailwind dark mode support - manual class */
+.dark .af-dropzone {
+    background: var(--af-surface);
+    border-color: var(--af-border);
+}
+
+/* Wrapper must allow overflow for external close button */
+.af-uploader-wrapper {
+    position: relative;
+    overflow: visible;
+    padding: 12px; /* Give space for the button that sticks out */
+}
+
+.af-dropzone {
+    position: relative;
+    border: 1px dashed var(--af-border);
+    border-radius: var(--af-radius);
+    padding: 2rem;
+    cursor: pointer;
+    transition: var(--af-transition);
+    background: var(--af-surface);
+    color: var(--af-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: var(--af-font);
+    overflow: hidden;
+}
+
+.af-dropzone:hover {
+    background: #e1e0df;
+    border-color: #b3b2b1;
+}
+
+.af-dz-plain { width: 100%; aspect-ratio: auto; min-height: 80px; }
+
+.af-upload-icon-small {
+    width: 20px;
+    height: 20px;
+    margin-bottom: 8px;
+    color: var(--af-secondary);
+}
+
+.af-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.af-upload-card {
+    background: white;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 220px;
+}
+
+.af-progress-pill {
+    flex-grow: 1;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.af-progress-fill {
+    height: 100%;
+    background: var(--af-accent);
+    transition: width 0.3s ease;
+}
+
+.af-status-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--af-primary);
+    min-width: 35px;
+}
+
+.af-cancel-upload {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    transition: var(--af-transition);
+}
+
+.af-cancel-upload:hover {
+    background: #e2e8f0;
+    color: var(--af-danger);
+}
+
+/* Status Cards */
+.af-status-card {
+    background: white;
+    padding: 10px 18px;
+    border-radius: 9999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: af-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes af-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.af-state-success .af-status-icon { color: var(--af-success); }
+.af-state-danger .af-status-icon { color: var(--af-danger); }
+.af-state-info .af-status-icon { color: var(--af-accent); }
+
+.af-status-message {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--af-primary);
+}
+.af-dz-squared { aspect-ratio: 1/1; width: 220px; }
+.af-dz-circled { aspect-ratio: 1/1; width: 220px; border-radius: 50%; }
+
+/* Clear/Remove Button - Positioned OUTSIDE the box (top-right corner of wrapper) */
+.af-clear-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--af-primary);
+    color: var(--af-bg);
+    border: 2px solid var(--af-bg);
+    cursor: pointer;
+    /* Alpine x-show controls visibility - don't set display:none */
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    transition: var(--af-transition);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform-origin: center center;
+}
+
+/* When visible (via Alpine x-show), use flex */
+.af-clear-btn:not([style*="display: none"]) {
+    display: flex;
+}
+
+.af-clear-btn:hover {
+    background: var(--af-danger);
+    transform: scale(1.1) rotate(90deg);
+}
+
+.af-clear-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.af-content-default {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    animation: af-fade-in 0.3s ease;
+    z-index: 1;
+    padding: 1rem;
+}
+
+.af-upload-icon {
+    width: 32px;
+    height: 32px;
+    opacity: 0.5;
+    transition: var(--af-transition);
+    stroke-width: 2;
+}
+
+.af-dropzone:hover {
+    border-color: var(--af-accent);
+    background: var(--af-bg);
+}
+
+.af-dropzone.drag-active {
+    border-color: var(--af-accent);
+    background: rgba(59, 130, 246, 0.05);
+    transform: scale(1.01);
+}
+
+.af-dropzone:hover .af-upload-icon {
+    transform: translateY(-2px);
+    opacity: 0.8;
+    color: var(--af-accent);
+}
+
+.af-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* File Preview Card */
+.af-file-preview-card {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: var(--af-bg);
+    border-radius: var(--af-radius);
+    animation: af-fade-in 0.3s ease;
+}
+
+.af-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.af-preview-image {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--af-surface);
+    flex-shrink: 0;
+}
+
+.af-preview-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.af-preview-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: var(--af-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--af-secondary);
+    flex-shrink: 0;
+}
+
+.af-preview-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* File Type Icon Colors */
+.af-preview-icon.af-type-pdf { color: var(--af-pdf); background: rgba(239, 68, 68, 0.1); }
+.af-preview-icon.af-type-video { color: var(--af-video); background: rgba(139, 92, 246, 0.1); }
+.af-preview-icon.af-type-image { color: var(--af-accent); background: rgba(59, 130, 246, 0.1); }
+.af-preview-icon.af-type-doc { color: var(--af-doc); background: rgba(59, 130, 246, 0.1); }
+.af-preview-icon.af-type-file { color: var(--af-secondary); background: var(--af-bg); }
+
+/* Circle Mask for Circle Variant Previews */
+.af-circle-mask {
+    border-radius: 50% !important;
+    overflow: hidden !important;
+}
+
+.af-dz-circled .af-file-preview-card {
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.af-dz-circled .af-preview-content {
+    flex-direction: column;
+    text-align: center;
+}
+
+.af-dz-circled .af-preview-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.af-dz-circled .af-preview-info {
+    display: none;
+}
+
+.af-preview-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.af-preview-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--af-primary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.af-preview-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--af-secondary);
+    transition: var(--af-transition);
+    flex-shrink: 0;
+}
+
+.af-preview-close:hover {
+    color: var(--af-danger);
+}
+
+.af-preview-close svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Status Overlay */
+.af-status-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--af-bg-rgb), 0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.af-status-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Beautiful Status Card */
+.af-status-card {
+    background: var(--af-bg);
+    padding: 12px 20px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    border: 1px solid var(--af-border);
+    animation: af-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.af-status-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.af-state-success .af-status-icon { background: var(--af-success); color: white; }
+.af-state-danger .af-status-icon { background: var(--af-danger); color: white; }
+.af-state-info .af-status-icon { background: var(--af-accent); color: white; }
+
+.af-status-message {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--af-primary);
+}
+
+/* Progress Card */
+.af-upload-card {
+    background: var(--af-bg);
+    padding: 1.2rem;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+    animation: af-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid var(--af-border);
+}
+
+.af-progress-ring-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.af-progress-ring {
+    width: 60px;
+    height: 60px;
+    transform: rotate(-90deg);
+}
+
+.af-ring-bg {
+    stroke: var(--af-border);
+    stroke-width: 3.5;
+    fill: none;
+}
+
+.af-ring-progress {
+    stroke: var(--af-accent);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    fill: none;
+    stroke-dasharray: 0, 100;
+    transition: stroke-dasharray 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.af-ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--af-primary);
+}
+
+@keyframes af-pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes af-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.af-status-icon svg { width: 14px; height: 14px; }
+
+.af-state-success .af-status-icon { background: var(--af-success); color: white; }
+.af-state-danger .af-status-icon { background: var(--af-danger); color: white; }
+.af-state-info .af-status-icon { background: var(--af-accent); color: white; }
+
+.af-status-message {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--af-primary);
+    white-space: nowrap;
+}
+
+.af-dropzone:hover { border-color: var(--af-accent); background: var(--af-bg); }
+.af-dropzone.dragging { border-color: var(--af-accent); transform: scale(1.01); background: rgba(59, 130, 246, 0.05); }
+
+/* Status Overlay */
+.af-status-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--af-modal-glass);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--af-transition);
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+
+.af-status-overlay.active { 
+    opacity: 1; 
+    pointer-events: all; 
+}
+
+/* Spinner Styles */
+.af-upload-progress-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.af-spinner-wrapper {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.af-spinner {
+    animation: af-rotate 2s linear infinite;
+    width: 60px;
+    height: 60px;
+}
+
+.af-spinner .path {
+    stroke: var(--af-accent);
+    stroke-linecap: round;
+    animation: af-dash 1.5s ease-in-out infinite;
+}
+
+.af-progress-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--af-primary);
+}
+
+/* Status Message Styles */
+.af-status-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    animation: af-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.af-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.af-status-success .af-icon-wrapper { background: var(--af-success); color: white; }
+.af-status-danger .af-icon-wrapper { background: var(--af-danger); color: white; }
+.af-status-info .af-icon-wrapper { background: var(--af-accent); color: white; }
+
+.af-icon-wrapper svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+}
+
+@keyframes af-rotate {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes af-dash {
+    0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+    100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+}
+
+@keyframes af-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Status Message */
+.af-status-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    animation: af-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.af-icon-success {
+    width: 48px;
+    height: 48px;
+    fill: var(--af-success);
+}
+
+.af-status-danger { color: var(--af-danger); }
+.af-status-success { color: var(--af-success); }
+.af-status-info { color: var(--af-accent); }
+
+.af-dz-circled { border-radius: 50%; aspect-ratio: 1/1; width: 140px; }
+.af-dz-inline { min-height: 80px; flex-direction: row; padding: 1rem; gap: 1rem; }
+
+.af-status-text {
+    color: var(--af-primary);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+/* NOTE: .af-clear-btn is defined once at the top of this file */
+
+/* Layout Variants - More responsive */
+.af-dz-squared { max-width: 250px; aspect-ratio: 1/1; }
+.af-dz-rect { max-width: 400px; aspect-ratio: 16/9; }
+.af-dz-circled { max-width: 200px; aspect-ratio: 1/1; border-radius: 50% !important; border-color: var(--af-border) !important; }
+.af-dz-inline { 
+    flex-direction: row !important; 
+    padding: 0.8rem 1.2rem !important; 
+    gap: 1rem !important; 
+    width: 100% !important; 
+    border-style: solid !important; 
+    text-align: left !important; 
+    justify-content: flex-start !important; 
+    min-height: 60px; 
+    border-radius: 12px;
+    overflow: hidden; /* Fix image overflow */
+}
+
+.af-dz-inline .af-preview-container {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.af-dz-inline .af-status-overlay {
+    flex-direction: row;
+    gap: 15px;
+    padding: 0 20px;
+    justify-content: flex-start;
+}
+
+.af-dz-inline .af-success-circle {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.af-dz-inline .af-success-circle svg {
+    width: 20px;
+    height: 20px;
+}
+
+.af-dz-inline .af-status-text {
+    white-space: nowrap;
+}
+
+/* Preview */
+.af-preview-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    animation: af-fade-in 0.3s ease;
+}
+
+@keyframes af-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.af-preview-img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Progress & Spinner Updates */
+.af-upload-progress {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(4px);
+    border-radius: inherit;
+    gap: 10px;
+}
+
+.af-spinner {
+    width: 40px;
+    height: 40px;
+    animation: af-rotate 1.5s linear infinite;
+}
+
+.af-spinner .path {
+    stroke: var(--af-accent);
+    stroke-linecap: round;
+    animation: af-dash 1.5s ease-in-out infinite;
+}
+
+@keyframes af-rotate {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes af-dash {
+    0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+    100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+}
+
+.af-progress-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--af-primary);
+}
+
+.af-progress-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(0,0,0,0.05);
+    z-index: 300;
+    display: none;
+}
+
+.af-progress-wrap.active { display: block; }
+
+.af-progress-bar {
+    height: 100%;
+    background: var(--af-accent);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Modal Infrastructure */
+#af-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    z-index: 99999;
+    display: none;
+    flex-direction: column;
+    font-family: var(--af-font);
+    color: var(--af-primary);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#af-modal.active { 
+    display: flex; 
+    background: var(--af-modal-glass);
+    backdrop-filter: blur(20px);
+    animation: af-modal-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#af-modal.closing {
+    animation: af-modal-out 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes af-modal-in {
+    from { opacity: 0; transform: scale(1.05); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes af-modal-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+}
+
+.af-modal-header {
+    background: var(--af-surface);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--af-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    z-index: 1000;
+}
+
+.af-canvas-wrapper {
+    flex: 1;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+}
+
+.af-controls {
+    background: var(--af-surface);
+    backdrop-filter: blur(30px);
+    border-top: 1px solid var(--af-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    z-index: 1000;
+}
+
+.af-btn-group, .af-ratio-group {
+    display: flex;
+    gap: 8px;
+    background: var(--af-bg);
+    padding: 4px;
+    border-radius: 100px;
+    border: 1px solid var(--af-border);
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.af-btn-group::-webkit-scrollbar { display: none; }
+
+.af-btn {
+    background: transparent;
+    border: none;
+    color: var(--af-secondary);
+    padding: 8px 16px;
+    border-radius: 100px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: var(--af-transition);
+    white-space: nowrap;
+}
+
+.af-btn:hover { color: var(--af-primary); background: var(--af-border); }
+.af-btn.active { background: var(--af-primary); color: var(--af-bg) !important; }
+
+.af-btn-primary {
+    background: var(--af-primary);
+    color: var(--af-bg) !important;
+    padding: 14px 44px;
+    font-weight: 600;
+    font-size: 15px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    transition: var(--af-transition);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.af-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+.af-btn-primary:active { transform: translateY(0); }
+
+/* File Info Display */
+.af-file-info {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: var(--af-modal-glass);
+    backdrop-filter: blur(8px);
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: var(--af-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: var(--af-transition);
+    border: 1px solid var(--af-border);
+}
+
+.af-dz-circled .af-file-info {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0 0 100px 100px;
+    justify-content: center;
+    padding-bottom: 20px;
+    padding-top: 10px;
+    height: 45%;
+    flex-direction: column;
+}
+
+.af-dz-circled .af-clear-btn {
+    top: -5px;
+    right: 5px; /* Offset a bit in for circle overlap */
+}
+
+.af-dropzone.has-file .af-file-info { opacity: 1; }
+
+.af-file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 10px;
+}
+
+.af-download-btn {
+    background: transparent;
+    border: none;
+    color: var(--af-accent);
+    cursor: pointer;
+    padding: 4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: var(--af-transition);
+}
+.af-download-btn:hover { color: #fff; transform: translateY(2px); }
+.af-download-btn svg { width: 16px; height: 16px; }
+
+.af-circle-toggle {
+    display: none;
+    background: #333;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--af-transition);
+}
+.af-circle-toggle.active { background: var(--af-accent); color: #000; }
+.af-circle-toggle.visible { display: flex; }
+
+.af-icon-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+#af-rot-val {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #aaa;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+}
+
+@keyframes af-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes af-pop {
+    0% { opacity: 0; transform: scale(0.8); }
+    70% { transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes af-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes af-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .af-controls { padding: 15px; gap: 12px; }
+    .af-btn { padding: 6px 12px; font-size: 12px; }
+    .af-btn-primary { width: 100%; padding: 12px; }
+    .af-modal-header { padding: 10px 15px; }
+    .af-ratio-group, .af-btn-group { gap: 4px; padding: 2px; }
+    .af-icon-btn { width: 34px; height: 34px; }
+    
+    /* Ensure canvas doesn't get squashed too much */
+    .af-canvas-wrapper { min-height: 250px; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+    #af-modal { flex-direction: row; }
+    .af-controls { width: 200px; height: 100%; border-top: none; border-left: 1px solid #1a1a1a; overflow-y: auto; }
+    .af-modal-header { position: absolute; top: 0; left: 0; right: 200px; background: transparent; border: none; }
+}
+
+/* Circular Dropzone Special Styling */
+.af-dz-circled {
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    overflow: visible;
+    position: relative;
+    border: 2px dashed var(--af-border) !important;
+    background: transparent;
+}
+
+/* Internal wrapper to handle clipping without cutting off external X button */
+.af-dz-circled .af-preview-container,
+.af-dz-circled .af-status-overlay {
+    border-radius: 50% !important;
+    overflow: hidden;
+    position: absolute;
+    inset: -1px; /* Slight overlap to ensure border coverage */
+    z-index: 5;
+}
+
+/* Remove centered clear btn logic for circles */
+.af-dz-circled .af-clear-btn {
+    top: 5px; /* Moved inside slightly to avoid being cut if container has constraints */
+    right: 5px;
+    background: #000;
+}
+
+.af-dz-circled .af-file-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--af-modal-glass); /* Darker backdrop */
+    color: var(--af-primary);
+    font-size: 10px;
+    padding: 10px 5px 15px 5px;
+    text-align: center;
+    border-radius: 0 0 100px 100px; /* Arc bottom */
+    height: 48%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    pointer-events: all; /* To click download icon */
+    z-index: 20;
+    border-top: 1px solid var(--af-border);
+    /* Ensure it doesn't leak out of the circle border */
+    margin: 1px; 
+}
+
+/* Prevent success icon squashing */
+.af-status-overlay svg {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+}
+
+/* Progress Bar */
+.af-progress-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--af-border);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 100;
+}
+.af-progress-wrap.active { opacity: 1; }
+.af-progress-bar {
+    height: 100%;
+    background: var(--af-accent);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* ===== NEW: Circular Spinner with Percentage ===== */
+.af-upload-spinner-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    background: var(--af-surface);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--af-border);
+    animation: af-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.af-spinner-container {
+    position: relative;
+    width: 64px;
+    height: 64px;
+}
+
+.af-circular-spinner {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.af-spinner-track {
+    stroke: var(--af-border);
+}
+
+.af-spinner-progress {
+    stroke: var(--af-accent);
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s ease;
+}
+
+.af-spinner-percent {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--af-primary);
+}
+
+.af-upload-status-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--af-secondary);
+}
+
+/* ===== Smooth Button Transitions ===== */
+.af-btn-enter {
+    animation: af-btn-in 0.2s ease-out;
+}
+
+.af-btn-leave {
+    animation: af-btn-out 0.15s ease-in;
+}
+
+@keyframes af-btn-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes af-btn-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.8); }
+}
+
+/* Prevent UI flicker during reset */
+.af-dropzone.is-resetting * {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ===== Circle Mask for Preview ===== */
+.af-preview-image.af-circle-mask {
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.af-preview-image.af-circle-mask img {
+    border-radius: 50%;
+}
+
+/* ===== Circled Variant Improvements ===== */
+.af-dz-circled .af-file-preview-card {
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.af-dz-circled .af-preview-content {
+    flex-direction: column;
+    text-align: center;
+}
+
+.af-dz-circled .af-preview-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: absolute;
+    inset: 0;
+}
+
+.af-dz-circled .af-preview-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.af-dz-circled .af-preview-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 8px 4px;
+    border-radius: 0 0 50% 50%;
+}
+
+.af-dz-circled .af-preview-name {
+    font-size: 10px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ===== 3-Layer Z-Index System ===== */
+/* Layer 1: Content (default) - z-index: 1 */
+.af-content-default {
+    z-index: 1;
+}
+
+/* Layer 2: Preview - z-index: 10 */
+.af-file-preview-card {
+    z-index: 10;
+}
+
+/* Layer 3: Close button - z-index: 1000 (always on top) */
+.af-clear-btn {
+    z-index: 1000;
+}
+
+/* Status overlay - z-index: 100 */
+.af-status-overlay {
+    z-index: 100;
+}
