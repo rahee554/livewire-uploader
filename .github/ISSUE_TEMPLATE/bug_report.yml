@@ -1,0 +1,77 @@
+name: Bug report
+description: Something does not work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this.
+
+        If the issue is exploitable — path traversal, a way past the upload
+        validation, script running from a filename — please **do not** file it
+        here. See [SECURITY.md](../blob/main/SECURITY.md) instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+      placeholder: |
+        I expected the preview to appear after picking a file.
+        The file uploads (the property is set) but the dropzone stays empty.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >
+        The component tag as you wrote it, plus the relevant properties on the
+        Livewire component. Ten lines beats a description of a whole form.
+      render: blade
+      placeholder: |
+        <x-af-uploader wire:model="photo" editor ratio="16/9" />
+
+        // App\Livewire\ProfileForm
+        use WithUploader;
+        public $photo;
+    validations:
+      required: true
+
+  - type: input
+    id: testbed
+    attributes:
+      label: Testbed panel
+      description: >
+        If you can reproduce it on /af-uploader/testbed in a local app, which
+        panel? That removes most of the guesswork. Leave blank if not.
+      placeholder: "Editor, 16:9"
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console
+      description: Any errors or warnings. Paste them as-is.
+      render: text
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: "uploader 0.2.0, PHP 8.4, Laravel 12.5, Livewire 4.2, Chrome 141"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: Where does it happen
+      multiple: true
+      options:
+        - Chrome / Edge
+        - Firefox
+        - Safari (macOS)
+        - Safari (iOS)
+        - Android browser
+        - Server-side only, no browser involved

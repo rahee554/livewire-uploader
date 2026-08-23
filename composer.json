@@ -1,8 +1,9 @@
 {
     "name": "artflow-studio/uploader",
-    "description": "A professional Livewire file uploader with built-in image cropping, progress tracking, and perfect instance isolation.",
-    "version": "0.1.0",
+    "description": "A Livewire file uploader with a built-in image editor, client-side re-encoding and per-instance isolation.",
+    "keywords": ["laravel", "livewire", "upload", "uploader", "cropper", "image", "alpine"],
     "license": "MIT",
+    "version": "0.2.0",
     "authors": [
         {
             "name": "ArtFlow Studio"
@@ -10,13 +11,22 @@
     ],
     "require": {
         "php": "^8.2",
-        "illuminate/support": "*",
-        "livewire/livewire": "^4.0"
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/filesystem": "^11.0|^12.0",
+        "livewire/livewire": "^3.0|^4.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.18",
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^11.0|^12.0"
     },
     "autoload": {
         "psr-4": {
             "ArtflowStudio\\FileUploader\\": "src/"
-        }
+        },
+        "files": [
+            "src/Traits/WithAFuploader.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -29,6 +39,14 @@
                 "ArtflowStudio\\FileUploader\\FileUploaderServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "lint": "vendor/bin/pint",
+        "lint:check": "vendor/bin/pint --test"
+    },
+    "config": {
+        "sort-packages": true
     },
     "minimum-stability": "stable",
     "prefer-stable": true

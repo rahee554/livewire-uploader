@@ -2,159 +2,153 @@
 
 namespace ArtflowStudio\FileUploader\Tests\Feature;
 
-use ArtflowStudio\FileUploader\Livewire\TestUploader;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Livewire\Component;
-use Livewire\Livewire;
-use Livewire\WithFileUploads;
-use Tests\TestCase;
+use ArtflowStudio\FileUploader\Tests\TestCase;
+use Illuminate\Support\Facades\Blade;
+use PHPUnit\Framework\Attributes\Test;
 
 class UploaderComponentTest extends TestCase
 {
-    protected function setUp(): void
+    private function render(string $template, array $data = []): string
     {
-        parent::setUp();
-        Storage::fake('public');
+        return Blade::render($template, $data);
     }
 
-    /** @test */
-    public function it_renders_uploader_component()
+    /**
+     * Js::from() serialises to JSON.parse('...') and escapes every double
+     * quote as a unicode escape so the payload is safe inside an HTML
+     * attribute. Undo that one substitution so assertions below can be written
+     * against readable JSON.
+     */
+    private function config(string $html): string
     {
-        // Use the package's built-in TestUploader component
-        $component = Livewire::test(TestUploader::class);
+        $escapedQuote = '\\'.'u0022';
 
-        // Check that the component renders with uploader elements
-        $component->assertViewHas('simpleImage', null);
+        return str_replace($escapedQuote, '"', $html);
     }
 
-    /** @test */
-    public function it_uploads_file_successfully()
+    #[Test]
+    public function it_renders(): void
     {
-        Storage::fake('public');
+        $html = $this->render('<x-af-uploader wire:model="photo" label="Pick a photo" />');
 
-        $file = UploadedFile::fake()->image('test-image.jpg');
-
-        $component = Livewire::test(TestUploader::class)
-            ->set('simpleImage', $file);
-
-        $component->assertSet('simpleImage', function ($value) {
-            return $value !== null;
-        });
+        $this->assertStringContainsString('af-uploader-wrapper', $html);
+        $this->assertStringContainsString('af-dropzone', $html);
+        $this->assertStringContainsString('Pick a photo', $html);
+        $this->assertStringContainsString('type="file"', $html);
     }
 
-    /** @test */
-    public function it_validates_file_type()
+    #[Test]
+    public function two_instances_get_different_ids(): void
     {
-        // Read the blade file to verify accept attribute is present
-        $viewPath = __DIR__.'/../../resources/views/components/uploader.blade.php';
-        $content = file_get_contents($viewPath);
+        $html = $this->render(<<<'BLADE'
+            <x-af-uploader wire:model="photo" />
+            <x-af-uploader wire:model="photo" />
+        BLADE);
 
-        $this->assertStringContainsString('accept=', $content);
-        $this->assertStringContainsString('$acceptAttr', $content);
+        preg_match_all('/wire:key="(af-[a-z0-9]+)"/', $html, $matches);
+
+        $this->assertCount(2, $matches[1]);
+        $this->assertNotSame($matches[1][0], $matches[1][1]);
     }
 
-    /** @test */
-    public function it_validates_file_size()
+    #[Test]
+    public function an_explicit_id_is_used_verbatim(): void
     {
-        // Check that max-size prop is handled
-        $viewPath = __DIR__.'/../../resources/views/components/uploader.blade.php';
-        $content = file_get_contents($viewPath);
+        $html = $this->render('<x-af-uploader wire:model="photo" id="avatar" />');
 
-        // Check the props for maxSize handling
-        $this->assertStringContainsString('maxSize', $content);
-        // Check the JavaScript config receives the maxSize
-        $this->assertStringContainsString('maxSize: {{ $maxSize }}', $content);
+        $this->assertStringContainsString('wire:key="af-avatar"', $html);
+        $this->assertStringContainsString('id="af-avatar"', $html);
     }
 
-    /** @test */
-    public function it_removes_uploaded_file()
+    #[Test]
+    public function options_are_serialised_into_x_data(): void
     {
-        Storage::fake('public');
+        $html = $this->render('<x-af-uploader wire:model="photo" max-size="4" accept="image/png" />');
 
-        $file = UploadedFile::fake()->image('test-image.jpg');
-
-        $component = Livewire::test(TestUploader::class)
-            ->set('simpleImage', $file);
-
-        // Verify the file is set
-        $component->assertSet('simpleImage', function ($value) {
-            return $value !== null;
-        });
-
-        // Set to null to remove
-        $component->set('simpleImage', null);
-        $component->assertSet('simpleImage', null);
+        $this->assertStringContainsString('afUploader(', $html);
+        $this->assertStringContainsString('"maxSize":4', $this->config($html));
+        $this->assertStringContainsString('"model":"photo"', $this->config($html));
+        $this->assertStringContainsString('accept="image/png"', $html);
     }
 
-    /** @test */
-    public function multiple_instances_work_independently()
+    #[Test]
+    public function auto_upload_false_is_serialised_as_false(): void
     {
-        $file1 = UploadedFile::fake()->image('image1.jpg');
-        $file2 = UploadedFile::fake()->image('image2.jpg');
+        $html = $this->render('<x-af-uploader wire:model="photo" auto-upload="false" />');
 
-        $component = Livewire::test(TestUploader::class)
-            ->set('simpleImage', $file1)
-            ->set('cropperSquare', $file2);
-
-        $component->assertSet('simpleImage', function ($value) {
-            return $value !== null;
-        });
-
-        $component->assertSet('cropperSquare', function ($value) {
-            return $value !== null;
-        });
+        $this->assertStringContainsString('"autoUpload":false', $this->config($html));
     }
 
-    /** @test */
-    public function it_generates_unique_ids_for_each_instance()
+    #[Test]
+    public function multiple_puts_the_attribute_on_the_input(): void
     {
-        // Read the Blade file directly to verify structure
-        $viewPath = __DIR__.'/../../resources/views/components/uploader.blade.php';
-        $content = file_get_contents($viewPath);
+        $html = $this->render('<x-af-uploader wire:model="files" multiple />');
 
-        $this->assertStringContainsString('af-upl-', $content);
-        $this->assertStringContainsString('wire:ignore', $content);
-        $this->assertStringContainsString('wire:key', $content);
-        $this->assertStringContainsString('x-data', $content);
-        $this->assertStringContainsString('afUploader', $content);
-    }
-}
-
-// Test component for testing
-class TestUploaderComponent extends Component
-{
-    use WithFileUploads;
-
-    public $photo;
-
-    protected $rules = [
-        'photo' => 'nullable|image|max:10240',
-    ];
-
-    public function removePhoto()
-    {
-        $this->photo = null;
+        $this->assertMatchesRegularExpression('/<input[^>]*\smultiple[\s>]/s', $html);
+        $this->assertStringContainsString('"multiple":true', $this->config($html));
     }
 
-    public function render()
+    #[Test]
+    public function the_input_never_carries_a_wire_model(): void
     {
-        return view('af-uploader::test-uploader-component');
+        // Livewire would bind the input itself and race the Alpine uploader.
+        $html = $this->render('<x-af-uploader wire:model="photo" />');
+
+        preg_match('/<input[^>]*type="file".*?>/s', $html, $input);
+
+        $this->assertNotEmpty($input);
+        $this->assertStringNotContainsString('wire:model', $input[0]);
     }
-}
 
-class MultiInstanceComponent extends Component
-{
-    use WithFileUploads;
-
-    public $photo1;
-
-    public $photo2;
-
-    public $photo3;
-
-    public function render()
+    #[Test]
+    public function no_stale_data_attribute_channel_remains(): void
     {
-        return view('af-uploader::test-multi-instance');
+        // The old build carried a parallel data-af-* config that drifted out
+        // of sync with the Alpine options (AUDIT.md, HIGH-05).
+        $html = $this->render('<x-af-uploader wire:model="photo" cropper ratio="16/9" target-size="500KB" />');
+
+        $this->assertStringNotContainsString('data-af-', $html);
+    }
+
+    #[Test]
+    public function the_variant_prop_selects_a_class(): void
+    {
+        $this->assertStringContainsString(
+            'af-dz-circled',
+            $this->render('<x-af-uploader wire:model="photo" variant="circled" />')
+        );
+
+        $this->assertStringContainsString(
+            'af-dz-plain',
+            $this->render('<x-af-uploader wire:model="photo" />')
+        );
+    }
+
+    #[Test]
+    public function dimensions_gain_a_pixel_unit_when_bare(): void
+    {
+        $html = $this->render('<x-af-uploader wire:model="photo" height="180" width="50%" />');
+
+        $this->assertStringContainsString('height: 180px;', $html);
+        $this->assertStringContainsString('width: 50%;', $html);
+    }
+
+    #[Test]
+    public function it_renders_without_a_bound_model(): void
+    {
+        $html = $this->render('<x-af-uploader />');
+
+        $this->assertStringContainsString('af-dropzone', $html);
+        $this->assertStringNotContainsString('entangle', $html);
+    }
+
+    #[Test]
+    public function the_assets_directive_emits_both_tags(): void
+    {
+        $html = Blade::render('@afUploaderAssets');
+
+        $this->assertStringContainsString('vendor/af-uploader/css/uploader.css', $html);
+        $this->assertStringContainsString('vendor/af-uploader/js/uploader.js', $html);
+        $this->assertStringContainsString('type="module"', $html);
     }
 }

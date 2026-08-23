@@ -1,53 +1,73 @@
 @props([
-    'model' => null,
-    'cropper' => 'false',
-    'preview' => 'true',
-    'ratio' => null,
-    'isCircle' => 'false',
-    'maxWidth' => 2000,
-    'quality' => null,
-    'variant' => 'plain',
-    'label' => 'Drop file or click',
-    'width' => null,
-    'height' => null,
-    'autoUpload' => 'true',
-    'maxSize' => 10,
-    'accept' => 'image/*',
-    'targetSize' => null,
+    'accept' => null,
+    'autoUpload' => null,
+    'compress' => null,
     'convert' => null,
-    'lossless' => 'false',
-    'optimized' => 'false',
+    'cropper' => null,
+    'editor' => null,
+    'height' => null,
+    'isCircle' => null,
+    'label' => null,
+    'lockRatio' => null,
+    'lossless' => null,
+    'maxFiles' => null,
+    'maxHeight' => null,
+    'maxSize' => null,
+    'maxWidth' => null,
     'multiple' => false,
+    'preview' => null,
+    'quality' => null,
+    'ratio' => null,
+    'showSavings' => null,
+    'targetSize' => null,
+    'theme' => null,
+    'variant' => null,
+    'width' => null,
 ])
 
 @php
-    $wireModel = $attributes->wire('model');
-    $modelName = $wireModel->value() ?: 'default';
-    
-    // Create a stable hash for this instance - must be deterministic across Livewire re-renders
-    // so we can restore state from cache
-    $context = [
-        $modelName,
-        $attributes->get('label', ''),
-        $attributes->get('variant', ''),
-        $attributes->get('wire:key', ''),
-        $attributes->get('name', ''),
-        // Include loop index if in a loop
-        isset($loop) ? $loop->index : '',
-        // Include a path-based hash to differentiate same-named properties in different views
-        md5(__FILE__),
-        // Use request URI for additional uniqueness without random component
-        // This keeps ID stable across Livewire morphs while being unique per page
-        request()->getRequestUri(),
-    ];
-    $stableHash = substr(md5(serialize($context)), 0, 12);
-    $instanceId = 'af-upl-' . ($attributes->get('id') ?: $stableHash);
+    use ArtflowStudio\FileUploader\Support\InstanceId;
+    use ArtflowStudio\FileUploader\Support\LivewireBridge;
+    use ArtflowStudio\FileUploader\Support\Options;
 
-    // Filter accept
-    $acceptAttr = $accept;
-    if ($cropper === 'true') {
-        $acceptAttr = 'image/*';
-    }
+    $wireModel = $attributes->wire('model');
+    $model = $wireModel->value() ?: null;
+
+    // Built by hand rather than with @entangle: that directive compiles against
+    // $__livewire, which an anonymous Blade component never has in scope.
+    $entangle = $model ? LivewireBridge::entangle($model, $wireModel->hasModifier('live')) : null;
+
+    // Deterministic across the initial render and every Livewire update.
+    // See Support/InstanceId and AUDIT.md, CRIT-02.
+    $instanceId = InstanceId::make($model ?? 'file', $attributes->get('id'));
+
+    $config = Options::build($instanceId, $model, [
+        'accept' => $accept,
+        'autoUpload' => $autoUpload,
+        'compress' => $compress,
+        'convert' => $convert,
+        'cropper' => $cropper,
+        'editor' => $editor,
+        'isCircle' => $isCircle,
+        'lockRatio' => $lockRatio,
+        'lossless' => $lossless,
+        'maxFiles' => $maxFiles,
+        'maxHeight' => $maxHeight,
+        'maxSize' => $maxSize,
+        'maxWidth' => $maxWidth,
+        'multiple' => $multiple,
+        'preview' => $preview,
+        'quality' => $quality,
+        'ratio' => $ratio,
+        'showSavings' => $showSavings,
+        'targetSize' => $targetSize,
+        'theme' => $theme,
+    ]);
+
+    $config['editor']['ratios'] = (array) config('af-uploader.editor.ratios', ['1', '4/3', '3/2', '16/9', 'free']);
+
+    $variant = $variant ?: config('af-uploader.defaults.variant', 'plain');
+    $label = $label ?: config('af-uploader.defaults.label', 'Drop file or click');
 
     $variantClass = match ($variant) {
         'squared' => 'af-dz-squared',
@@ -57,282 +77,249 @@
         default => 'af-dz-plain',
     };
 
-    // Parse width/height - support w-100, w-100px, h-100, etc.
-    $parseSize = function($value) {
-        if (!$value) return null;
-        // If it's just a number or ends with common units, use as-is
-        if (preg_match('/^\d+(%|px|em|rem|vh|vw)?$/', $value)) {
-            return is_numeric($value) ? $value . 'px' : $value;
-        }
-        return $value;
-    };
-    
-    $widthStyle = $parseSize($width);
-    $heightStyle = $parseSize($height);
-    
-    $style = '';
-    if ($widthStyle) {
-        $style .= "width: {$widthStyle};";
-    }
-    if ($heightStyle) {
-        $style .= "height: {$heightStyle};";
-    }
-    
-    // Quality: default to 0.80 when outputting WebP (cropper always outputs WebP; convert="webp" also outputs WebP)
-    $isLossless = $lossless === 'true' || $lossless === true;
-    $isWebpOutput = $convert !== null || $cropper === 'true';
-    $resolvedQuality = $quality !== null
-        ? (float) $quality
-        : ($isLossless ? 1.0 : ($isWebpOutput ? 0.80 : 0.92));
+    // A bare number means pixels; anything already carrying a unit passes through.
+    $dimension = fn ($value) => $value === null || $value === ''
+        ? null
+        : (is_numeric($value) ? $value.'px' : $value);
 
-    // Determine if this is accepting images for file type icon logic
-    $isImageOnly = str_contains($accept, 'image');
-    $isVideoOnly = str_contains($accept, 'video');
+    $style = collect(['width' => $dimension($width), 'height' => $dimension($height)])
+        ->filter()
+        ->map(fn ($value, $property) => "{$property}: {$value};")
+        ->implode(' ');
+
+    $isCircleVariant = $variant === 'circled' || $config['editor']['circle'];
 @endphp
 
-<div {{ $attributes->only(['class'])->merge(['class' => 'af-uploader-wrapper']) }} x-cloak
-    wire:ignore
+<div
+    {{ $attributes->only('class')->merge(['class' => 'af-uploader-wrapper']) }}
     wire:key="{{ $instanceId }}"
-    @af-status-update-{{ $instanceId }}.window="onStatusUpdate($event)" 
-    @af-external-file-selected-{{ $instanceId }}.window="onExternalFileSelected($event)"
-    @af-image-cropped-{{ $instanceId }}.window="onImageCropped($event)" 
-    x-data="window.afUploader({
-        wireModel: '{{ $wireModel->value() }}',
-        modelValue: @entangle($wireModel->value()),
-        id: '{{ $instanceId }}',
-        autoUpload: {{ $autoUpload ? 'true' : 'false' }},
-        maxSize: {{ $maxSize }},
-        cropper: {{ $cropper === 'true' ? 'true' : 'false' }},
-        accept: '{{ $acceptAttr }}',
-        multiple: {{ ($multiple === true || $multiple === 'true') ? 'true' : 'false' }}
-    })">
-    {{-- Layer 3 (Top): Close button - positioned OUTSIDE dropzone at wrapper level, always accessible --}}
-    <button class="af-clear-btn" 
-        @click.stop="remove()" 
-        x-show="(hasFile || statusText) && !isUploading && !isResetting" 
-        x-transition:enter="af-btn-enter"
-        x-transition:leave="af-btn-leave"
-        type="button" 
-        aria-label="Remove file">
+    wire:ignore
+    x-data="afUploader({{ Js::from($config) }}{{ $entangle ? ', '.$entangle : '' }})"
+    x-cloak
+>
+    {{-- Sits outside the dropzone so clicking it never reaches the picker. --}}
+    <button
+        type="button"
+        class="af-clear-btn"
+        x-show="hasFiles || message"
+        x-cloak
+        @click.stop="clear()"
+        aria-label="Remove file"
+    >
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
     </button>
 
-    <div class="af-dropzone {{ $variantClass }}" id="dz-{{ $instanceId }}"
-        x-ref="dz_{{ $instanceId }}"
-        :class="{ 'is-uploading': isUploading, 'has-error': statusType === 'danger', 'has-file': hasFile && !isUploading, 'drag-active': dragActive, 'is-resetting': isResetting }" 
+    <div
+        class="af-dropzone {{ $variantClass }}"
         style="{{ $style }}"
-        @click="if (!cropper && !isUploading && !isResetting && (!hasFile || multiple)) { $refs['fileInput_' + id].click(); }"
-        @dragover.prevent="dragActive = true"
-        @dragleave.prevent="dragActive = false"
-        @drop.prevent="dragActive = false; if ($event.dataTransfer.files.length) { const dt = new DataTransfer(); const dropped = $event.dataTransfer.files; if (multiple) { for (let i = 0; i < dropped.length; i++) { dt.items.add(dropped[i]); } } else { dt.items.add(dropped[0]); } $refs['fileInput_' + id].files = dt.files; $refs['fileInput_' + id].dispatchEvent(new Event('change')); }"
+        role="button"
+        tabindex="0"
+        :aria-busy="uploading || busy"
+        :class="{
+            'is-uploading': uploading,
+            'is-busy': busy,
+            'has-error': messageTone === 'error',
+            'has-file': hasFiles && !uploading,
+            'drag-active': dragging,
+        }"
+        @click="openPicker()"
+        @keydown.enter.prevent="openPicker()"
+        @keydown.space.prevent="openPicker()"
+        @dragover.prevent="dragging = true"
+        @dragleave.prevent="dragging = false"
+        @drop.prevent="onDrop($event)"
     >
-        {{-- Layer 1 (Bottom): Default upload prompt --}}
-        <div class="af-content-default" x-show="!isUploading && !statusText && !hasFile && !isResetting" x-transition.opacity.duration.150ms>
+        {{-- Empty state --}}
+        <div class="af-content-default" x-show="!hasFiles && !uploading && !busy && !message" x-transition.opacity.duration.150ms>
             <svg class="af-upload-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 15V3m0 0l4 4m-4-4L8 7m-4 11v3h16v-3" />
             </svg>
             <span class="af-label">{{ $label }}</span>
         </div>
 
-        {{-- Layer 2 (Middle): File preview - contained within dropzone --}}
-        <div class="af-file-preview-card" x-show="hasFile && !isResetting" x-transition.opacity.duration.200ms>
+        {{--
+            Several files: a scrollable thumbnail grid, each tile removable on
+            its own. A single shared preview plus a "3 files" caption told you
+            nothing about what you had actually picked.
+        --}}
+        <div class="af-file-grid" x-show="multiple && hasFiles" x-cloak x-transition.opacity.duration.200ms>
+            <div class="af-file-grid-scroll">
+                <template x-for="(file, index) in files" :key="file.name + ':' + index">
+                    <div class="af-file-tile" :class="`af-kind-${file.kind}`">
+                        <template x-if="file.preview">
+                            <img :src="file.preview" :alt="file.name" class="af-tile-thumb">
+                        </template>
+
+                        <template x-if="!file.preview">
+                            <span class="af-tile-ext" x-text="file.name.split('.').pop()?.toUpperCase() || 'FILE'"></span>
+                        </template>
+
+                        <button
+                            type="button"
+                            class="af-tile-remove"
+                            @click.stop="removeAt(index)"
+                            :aria-label="`Remove ${file.name}`"
+                            :title="file.name"
+                        >
+                            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.5">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <p class="af-file-grid-caption">
+                <span x-text="summary"></span>
+                <span class="af-grid-total" x-text="totalSize"></span>
+            </p>
+        </div>
+
+        {{-- One file --}}
+        <div class="af-file-preview-card" x-show="!multiple && hasFiles" x-transition.opacity.duration.200ms>
             <div class="af-preview-content">
-                <template x-if="filePreview && isImageFile(filePreview)">
-                    <div class="af-preview-image {{ $isCircle === 'true' || $variant === 'circled' ? 'af-circle-mask' : '' }}">
-                        <img :src="filePreview" :alt="fileName" class="af-preview-thumb">
+                <template x-if="files[0]?.preview">
+                    <div class="af-preview-image {{ $isCircleVariant ? 'af-circle-mask' : '' }}">
+                        <img :src="files[0].preview" :alt="files[0].name" class="af-preview-thumb">
                     </div>
                 </template>
-                <template x-if="!filePreview || !isImageFile(filePreview)">
-                    <div class="af-preview-icon" :class="getFileTypeClass(fileName)">
-                        <template x-if="getFileType(fileName) === 'pdf'">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 17.5v-4h1.25c1.1 0 2 .67 2 1.5s-.9 1.5-2 1.5H9.5v1.5h-1zm1-2.5h.25c.55 0 1-.22 1-.5s-.45-.5-1-.5H9.5v1zm3.5 2.5v-4h1.5c1.38 0 2.5.9 2.5 2s-1.12 2-2.5 2H13zm1-3v2h.5c.83 0 1.5-.45 1.5-1s-.67-1-1.5-1H14zm4 3v-4h3v1h-2v.5h1.5v1H19v1.5h-1z"/></svg>
-                        </template>
-                        <template x-if="getFileType(fileName) === 'video'">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4zM15 16H5V8h10v8z"/></svg>
-                        </template>
-                        <template x-if="getFileType(fileName) === 'image'">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                        </template>
-                        <template x-if="getFileType(fileName) === 'doc'">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11zM9.5 11.5v6h1v-2h1c.83 0 1.5-.67 1.5-1.5v-1c0-.83-.67-1.5-1.5-1.5h-2zm1 1h1c.28 0 .5.22.5.5v1c0 .28-.22.5-.5.5h-1v-2z"/></svg>
-                        </template>
-                        <template x-if="!['pdf', 'video', 'image', 'doc'].includes(getFileType(fileName))">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-                        </template>
+
+                <template x-if="!files[0]?.preview">
+                    <div class="af-preview-icon" :class="`af-kind-${files[0]?.kind || 'file'}`">
+                        @include('af-uploader::components.file-icons')
                     </div>
                 </template>
+
                 <div class="af-preview-info">
-                    <p class="af-preview-name" x-text="fileName || 'Loaded'"></p>
+                    <p class="af-preview-name" x-text="summary"></p>
+
+                    {{-- Plain size, unless there is a saving worth reporting --}}
+                    <p
+                        class="af-preview-meta"
+                        x-show="files.length === 1 && files[0]?.size && !files[0]?.savings"
+                        x-text="files[0]?.size"
+                    ></p>
+
+                    {{--
+                        Only rendered when the caller passed show-savings and the
+                        browser actually shrank the file. See savingsFor().
+                    --}}
+                    <p
+                        class="af-preview-savings"
+                        x-show="files.length === 1 && files[0]?.savings"
+                        x-cloak
+                    >
+                        <span class="af-savings-before" x-text="files[0]?.savings?.before"></span>
+                        <span class="af-savings-arrow" aria-hidden="true">&rarr;</span>
+                        <span class="af-savings-after" x-text="files[0]?.savings?.after"></span>
+                        <span
+                            class="af-savings-badge"
+                            :class="{ 'af-savings-missed': files[0]?.savings?.met === false }"
+                            :title="files[0]?.savings?.met === false
+                                ? `Could not reach ${files[0]?.savings?.budget}`
+                                : null"
+                            x-text="`−${files[0]?.savings?.percent}%`"
+                        ></span>
+                    </p>
                 </div>
             </div>
         </div>
 
-        {{-- Status overlay with spinner --}}
-        <div class="af-status-overlay" :class="{ 'active': statusText || isUploading }" x-transition>
-            <template x-if="isUploading">
+        {{-- Resting hint: sits above the preview instead of covering it --}}
+        <div class="af-ready-pill" x-show="messageTone === 'ready' && !uploading && !busy" x-cloak x-text="message"></div>
+
+        {{--
+            Progress along the bottom edge. It is the only progress indicator a
+            short or inline dropzone has room for, and it is unobtrusive enough
+            to leave running everywhere.
+        --}}
+        <div class="af-progress-rail" x-show="uploading" x-cloak>
+            <div class="af-progress-fill" :style="`width: ${progress}%`"></div>
+        </div>
+
+        {{-- Progress and messages --}}
+        <div class="af-status-overlay" :class="{ 'active': showOverlay, 'is-compact': compact }" x-transition>
+            <template x-if="uploading">
                 <div class="af-upload-spinner-card">
-                    {{-- Circular spinner with percentage --}}
-                    <div class="af-spinner-container">
+                    {{-- The ring needs ~120px of height; below that the rail carries it. --}}
+                    <div class="af-spinner-container" x-show="!compact">
                         <svg class="af-circular-spinner" viewBox="0 0 50 50">
-                            <circle class="af-spinner-track" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
-                            <circle class="af-spinner-progress" cx="25" cy="25" r="20" fill="none" stroke-width="4"
-                                :style="'stroke-dasharray: ' + (progress * 1.256) + ', 125.6'"></circle>
+                            <circle class="af-spinner-track" cx="25" cy="25" r="20" fill="none" stroke-width="4" />
+                            <circle
+                                class="af-spinner-progress" cx="25" cy="25" r="20" fill="none" stroke-width="4"
+                                :style="`stroke-dasharray: ${progress * 1.256}, 125.6`"
+                            />
                         </svg>
-                        <div class="af-spinner-percent" x-text="progress + '%'"></div>
+                        <div class="af-spinner-percent" x-text="`${progress}%`"></div>
                     </div>
-                    <span class="af-upload-status-text">Uploading...</span>
-                    <button type="button" class="af-cancel-upload" @click.stop="cancelUpload()" title="Cancel Upload">
+
+                    <span class="af-upload-status-text">
+                        <span x-show="!compact">Uploading&hellip;</span>
+                        <span x-show="compact" x-text="`Uploading ${progress}%`"></span>
+                    </span>
+
+                    <button type="button" class="af-cancel-upload" @click.stop="cancel()" title="Cancel upload">
                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                     </button>
                 </div>
             </template>
 
-            <template x-if="!isUploading && statusText">
-                <div class="af-status-card" :class="'af-state-' + statusType">
-                    <div class="af-status-icon">
-                        <template x-if="statusType === 'success'">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M20 6L9 17L4 12" />
-                            </svg>
-                        </template>
-                        <template x-if="statusType === 'danger' || statusType === 'error'">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                        </template>
-                        <template x-if="statusType === 'info'">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="16" x2="12" y2="12" />
-                                <line x1="12" y1="8" x2="12.01" y2="8" />
-                            </svg>
-                        </template>
-                    </div>
-                    <span class="af-status-message" x-text="statusText"></span>
+            <template x-if="busy && !uploading">
+                <div class="af-status-card af-state-info">
+                    <span class="af-status-message">Processing&hellip;</span>
+                </div>
+            </template>
+
+            <template x-if="message && !uploading && !busy">
+                <div class="af-status-card" :class="`af-state-${messageTone}`" role="status">
+                    <span class="af-status-message" x-text="message"></span>
                 </div>
             </template>
         </div>
 
-        <input type="file" x-ref="fileInput_{{ $instanceId }}"
-            {{ $attributes->whereDoesntStartWith('wire:model')->whereDoesntStartWith('class')->whereDoesntStartWith('wire:key')->whereDoesntStartWith('id') }}
+        {{-- Manual upload trigger; only reachable when auto-upload is off --}}
+        <button
+            type="button"
+            class="af-btn af-btn-primary af-upload-btn"
+            x-show="awaitingUpload"
+            x-cloak
+            @click.stop="upload()"
+        >
+            Upload
+        </button>
+
+        <input
+            type="file"
+            x-ref="input"
             id="{{ $instanceId }}"
-            accept="{{ $accept }}"
-            {{ ($multiple === true || $multiple === 'true') ? 'multiple' : '' }}
-            @change="onInputFileChange"
-            @if ($wireModel->value()) data-af-wire-model="{{ $wireModel->value() }}" @endif
-            data-af-id="{{ $instanceId }}"
-            af-cropper="{{ $cropper }}" data-af-preview="{{ $preview }}"
-            data-af-ratio="{{ $ratio }}" data-af-is-circle="{{ $isCircle }}"
-            data-af-max-width="{{ $maxWidth }}" data-af-quality="{{ $resolvedQuality }}"
-            @if($targetSize) data-af-target-size="{{ $targetSize }}" @endif
-            @if($convert) data-af-convert="{{ $convert }}" @endif
-            data-af-lossless="{{ $isLossless ? 'true' : 'false' }}"
-            data-af-optimized="{{ $optimized }}"
-            hidden>
+            accept="{{ $config['accept'] }}"
+            @if ($config['multiple']) multiple @endif
+            @change="onPick($event)"
+            {{--
+                openPicker() calls input.click(), and that synthetic click
+                bubbles back up to the dropzone's own @click — which would open
+                a second file dialog. Stopping it here is what keeps one click
+                to one dialog (AUDIT.md, HIGH-02).
+            --}}
+            @click.stop
+            {{ $attributes->except(['class', 'id', 'style', 'accept', 'multiple'])->whereDoesntStartWith('wire:') }}
+            hidden
+        >
     </div>
 </div>
 
-@if ($wireModel->name() && isset($errors))
-    @error($wireModel->name())
-        <small class="text-danger mt-1 d-block text-red-500 text-xs">{{ $message }}</small>
-    @enderror
+{{--
+    $errors is shared onto views by the session error middleware. An anonymous
+    Blade component rendered outside a web request never receives it, so guard
+    rather than assume.
+--}}
+@if ($model && isset($errors) && $errors->has($wireModel->name()))
+    <small class="af-error-text">{{ $errors->first($wireModel->name()) }}</small>
 @endif
-
-
-@once
-    <style>
-        #af-modal {
-            display: none;
-        }
-
-        #af-modal.active {
-            display: flex !important;
-        }
-    </style>
-
-    <div id="af-modal">
-        <div class="af-modal-header">
-            <span style="font-weight: 600; letter-spacing: 0.5px; font-size: 13px; color: var(--af-primary);">IMAGE
-                EDITOR</span>
-            <button type="button" class="af-btn" id="af-cancel"
-                style="padding: 5px 10px; font-size: 20px; color: var(--af-secondary);">&times;</button>
-        </div>
-
-        <div class="af-canvas-wrapper">
-            <canvas id="af-canvas"></canvas>
-            <div id="af-rot-val">0&deg;</div>
-        </div>
-
-        <div class="af-controls">
-            <div class="af-ratio-group">
-                <button type="button" class="af-btn active" data-ratio="1">1:1</button>
-                <div class="af-circle-toggle" id="af-ratio-circle" title="Toggle Circle Mask">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <path
-                            d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-                    </svg>
-                </div>
-                <button type="button" class="af-btn" data-ratio="4/3">4:3</button>
-                <button type="button" class="af-btn" data-ratio="3/2">3:2</button>
-                <button type="button" class="af-btn" data-ratio="16/9">16:9</button>
-                <button type="button" class="af-btn af-icon-btn" data-ratio="0" title="Free Form">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <path
-                            d="M13 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-8h-2v8H5V5h8V3zm2 0v2h3.59L8.34 15.25l1.41 1.41L20 6.41V10h2V3h-7z" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="af-btn-group">
-                <button type="button" class="af-btn af-icon-btn" id="af-rot-left" title="Rotate Counter-Clockwise">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <path
-                            d="M12.25 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8v4l5-5-5-5v4z" />
-                    </svg>
-                </button>
-                <button type="button" class="af-btn af-icon-btn" id="af-zoom-out" title="Zoom Out">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                        <path d="M19 13H5v-2h14v2z" />
-                    </svg>
-                </button>
-                <button type="button" class="af-btn af-icon-btn" id="af-fit-view" title="Auto-Fit Image to Mask">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <polyline points="9 21 3 21 3 15"></polyline>
-                        <line x1="21" y1="3" x2="14" y2="10"></line>
-                        <line x1="3" y1="21" x2="10" y2="14"></line>
-                        <polyline points="21 15 21 21 15 21"></polyline>
-                        <polyline points="3 9 3 3 9 3"></polyline>
-                        <line x1="21" y1="21" x2="14" y2="14"></line>
-                        <line x1="3" y1="3" x2="10" y2="10"></line>
-                    </svg>
-                </button>
-                <button type="button" class="af-btn af-icon-btn" id="af-zoom-in" title="Zoom In">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                    </svg>
-                </button>
-                <button type="button" class="af-btn af-icon-btn" id="af-rot-right" title="Rotate Clockwise">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <path
-                            d="M11.75 2c5.52 0 10 4.48 10 10s-4.48 10-10 10-10-4.48-10-10h2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8v4l-5-5 5-5v4z" />
-                    </svg>
-                </button>
-            </div>
-
-            <button type="button" class="af-btn af-btn-primary" id="af-confirm"
-                style="width: 100%; margin-top: 10px; padding: 12px; font-weight: 600; background: var(--af-accent); color: #fff; border: none; border-radius: 10px; cursor: pointer;">
-                Confirm Crop & Save
-            </button>
-        </div>
-    </div>
-@endonce
-
-@include('af-uploader::components.scripts')

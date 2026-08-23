@@ -1,0 +1,993 @@
+/*!
+ * AF Uploader
+ *
+ * Rewritten from the v4 stylesheet, which had grown four conflicting
+ * definitions of .af-dz-circled, two of .af-dz-inline, and no box-sizing rule
+ * at all — so the height prop was always 66px short of what the caller asked
+ * for. See AUDIT.md.
+ *
+ * Everything is namespaced under .af-*. Nothing here styles a bare element
+ * selector, so dropping this file into an app cannot disturb its own CSS.
+ *
+ * Theming: override any --af-* custom property on your own :root to restyle
+ * the whole component.
+ */
+
+/* ==========================================================================
+   Tokens
+   ========================================================================== */
+
+:root {
+    --af-surface: #ffffff;
+    --af-surface-alt: #f8fafc;
+    --af-border: #d8dee9;
+    --af-border-strong: #b9c2d0;
+    --af-text: #1e293b;
+    --af-muted: #64748b;
+    --af-accent: #3b82f6;
+    --af-accent-contrast: #ffffff;
+    --af-danger: #dc2626;
+    --af-success: #059669;
+    --af-warning: #d97706;
+
+    --af-kind-image: #0ea5e9;
+    --af-kind-video: #8b5cf6;
+    --af-kind-audio: #ec4899;
+    --af-kind-pdf: #ef4444;
+    --af-kind-doc: #3b82f6;
+    --af-kind-sheet: #16a34a;
+    --af-kind-slide: #f97316;
+    --af-kind-archive: #a16207;
+    --af-kind-file: #64748b;
+
+    --af-radius: 12px;
+    --af-radius-sm: 8px;
+    --af-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --af-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --af-speed: 180ms;
+    --af-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 4px 16px rgba(15, 23, 42, .06);
+    --af-overlay: rgba(255, 255, 255, .88);
+    --af-scrim: rgba(8, 10, 14, .82);
+}
+
+/*
+ * Dark mode.
+ *
+ * `data-af-theme` on <html> is the single switch, and core/theme.js is what
+ * sets it. That module reads the host's own convention — Bootstrap's
+ * `data-bs-theme`, Tailwind's `.dark`, `data-theme`, and the rest — and only
+ * falls back to the OS setting when the host expresses no preference. It then
+ * keeps watching, so an in-page theme toggle carries the uploader with it.
+ *
+ * Resolving it there rather than here is deliberate. CSS cannot distinguish a
+ * Tailwind app deliberately in light mode (expressed as the *absence* of
+ * `.dark`) from an app that never configured theming at all, so a bare
+ * `prefers-color-scheme` rule turns the uploader dark inside light pages.
+ */
+:root[data-af-theme="dark"] {
+    color-scheme: dark;
+
+    --af-surface: #1c2026;
+    --af-surface-alt: #14171c;
+    --af-border: #333b47;
+    --af-border-strong: #47515f;
+    --af-text: #e8ebef;
+    --af-muted: #9aa4b2;
+    --af-overlay: rgba(20, 23, 28, .9);
+    --af-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .35);
+}
+
+/*
+ * Pre-JS fallback, for the moment between first paint and the module running.
+ * Every selector is disabled the instant data-af-theme appears, so this can
+ * never disagree with the resolved value.
+ */
+:root:not([data-af-theme]).dark,
+:root:not([data-af-theme])[data-theme="dark"],
+:root:not([data-af-theme])[data-bs-theme="dark"],
+:root:not([data-af-theme]) body.dark {
+    color-scheme: dark;
+
+    --af-surface: #1c2026;
+    --af-surface-alt: #14171c;
+    --af-border: #333b47;
+    --af-border-strong: #47515f;
+    --af-text: #e8ebef;
+    --af-muted: #9aa4b2;
+    --af-overlay: rgba(20, 23, 28, .9);
+    --af-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .35);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-af-theme]):not(.light):not([data-theme="light"]):not([data-bs-theme="light"]) {
+        color-scheme: dark;
+
+        --af-surface: #1c2026;
+        --af-surface-alt: #14171c;
+        --af-border: #333b47;
+        --af-border-strong: #47515f;
+        --af-text: #e8ebef;
+        --af-muted: #9aa4b2;
+        --af-overlay: rgba(20, 23, 28, .9);
+        --af-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .35);
+    }
+}
+
+/* ==========================================================================
+   Wrapper
+   ========================================================================== */
+
+/*
+ * Every box the component owns measures border-to-border. Without this the
+ * padding is added on top of any height the caller sets, which is why
+ * height="170" used to render 236px tall.
+ */
+.af-uploader-wrapper,
+.af-uploader-wrapper *,
+.af-uploader-wrapper *::before,
+.af-uploader-wrapper *::after,
+#af-modal,
+#af-modal * {
+    box-sizing: border-box;
+}
+
+.af-uploader-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    font-family: var(--af-font);
+    color: var(--af-text);
+    line-height: 1.45;
+}
+
+[x-cloak] { display: none !important; }
+
+/* ==========================================================================
+   Dropzone
+   ========================================================================== */
+
+.af-dropzone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    width: 100%;
+    min-height: 132px;
+    padding: 1.25rem;
+    text-align: center;
+    cursor: pointer;
+    overflow: hidden;
+    color: var(--af-muted);
+    background: var(--af-surface);
+    border: 1.5px dashed var(--af-border);
+    border-radius: var(--af-radius);
+    transition: border-color var(--af-speed) var(--af-ease),
+                background-color var(--af-speed) var(--af-ease),
+                box-shadow var(--af-speed) var(--af-ease);
+}
+
+.af-dropzone:hover {
+    border-color: var(--af-border-strong);
+    background: var(--af-surface-alt);
+}
+
+/* The arrow lifts toward the word "upload" on hover. */
+.af-dropzone:hover .af-upload-icon-small {
+    transform: translateY(-2px);
+    opacity: 1;
+}
+
+.af-dropzone:focus-visible {
+    outline: 2px solid var(--af-accent);
+    outline-offset: 2px;
+}
+
+.af-dropzone.drag-active {
+    border-color: var(--af-accent);
+    border-style: solid;
+    background: color-mix(in srgb, var(--af-accent) 8%, var(--af-surface));
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-accent) 16%, transparent);
+}
+
+.af-dropzone.has-file {
+    border-style: solid;
+    border-color: var(--af-border);
+    padding: 0;
+}
+
+.af-dropzone.has-error {
+    border-color: var(--af-danger);
+    border-style: solid;
+}
+
+.af-dropzone.is-uploading,
+.af-dropzone.is-busy {
+    cursor: progress;
+}
+
+/* --- Variants ------------------------------------------------------------ */
+
+.af-dz-squared { aspect-ratio: 1 / 1; }
+.af-dz-rect    { aspect-ratio: 16 / 9; }
+
+.af-dz-circled {
+    aspect-ratio: 1 / 1;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    min-height: 132px;
+    margin-inline: auto;
+    border-radius: 50%;
+    padding: 1rem;
+}
+
+/* A circular dropzone with a file in it keeps the round crop. */
+.af-dz-circled.has-file { padding: 0; }
+
+.af-dz-inline {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    min-height: 62px;
+    padding: .625rem .875rem;
+    gap: .75rem;
+    border-style: solid;
+    border-radius: var(--af-radius-sm);
+}
+
+.af-dz-inline.has-file { padding: .625rem .875rem; }
+.af-dz-inline .af-content-default { flex-direction: row; gap: .625rem; }
+.af-dz-inline .af-file-preview-card { position: static; padding: 0; }
+.af-dz-inline .af-preview-content { flex-direction: row; gap: .75rem; }
+.af-dz-inline .af-preview-image { width: 40px; height: 40px; }
+.af-dz-inline .af-preview-icon { width: 34px; height: 34px; }
+.af-dz-inline .af-preview-info { align-items: flex-start; text-align: left; }
+
+/* ==========================================================================
+   Empty state
+   ========================================================================== */
+
+.af-content-default {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    pointer-events: none;
+}
+
+.af-upload-icon-small {
+    width: 26px;
+    height: 26px;
+    opacity: .75;
+    transition: transform var(--af-speed) var(--af-ease), opacity var(--af-speed) var(--af-ease);
+}
+
+/* While a file is hovering over the page, the arrow keeps travelling. */
+.af-dropzone.drag-active .af-upload-icon-small {
+    animation: af-float 1s var(--af-ease) infinite;
+    opacity: 1;
+}
+
+.af-label {
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--af-muted);
+}
+
+/* ==========================================================================
+   File preview
+   ========================================================================== */
+
+.af-file-preview-card {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: .75rem;
+    pointer-events: none;
+}
+
+.af-preview-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+}
+
+/*
+ * The image fills the dropzone rather than sitting in it as a thumbnail —
+ * the old 48px chip made it impossible to tell what you had actually picked.
+ */
+.af-preview-image {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: var(--af-radius-sm);
+    background: var(--af-surface-alt);
+}
+
+.af-preview-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.af-preview-image.af-circle-mask { border-radius: 50%; aspect-ratio: 1 / 1; flex: 0 0 auto; height: 100%; width: auto; max-width: 100%; }
+.af-dz-circled .af-preview-image { border-radius: 50%; }
+.af-dz-circled .af-file-preview-card { padding: 0; }
+.af-dz-circled .af-preview-info { display: none; }
+
+.af-preview-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: var(--af-kind-file);
+}
+
+.af-preview-icon svg { width: 100%; height: 100%; }
+
+.af-kind-image   { color: var(--af-kind-image); }
+.af-kind-video   { color: var(--af-kind-video); }
+.af-kind-audio   { color: var(--af-kind-audio); }
+.af-kind-pdf     { color: var(--af-kind-pdf); }
+.af-kind-doc     { color: var(--af-kind-doc); }
+.af-kind-sheet   { color: var(--af-kind-sheet); }
+.af-kind-slide   { color: var(--af-kind-slide); }
+.af-kind-archive { color: var(--af-kind-archive); }
+
+.af-preview-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .125rem;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.af-preview-name {
+    margin: 0;
+    max-width: 100%;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--af-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.af-preview-meta {
+    margin: 0;
+    font-size: .6875rem;
+    color: var(--af-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Compression report, shown only when the caller passes show-savings.
+ * The original is struck through so the before/after reads at a glance.
+ */
+.af-preview-savings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .3125rem;
+    margin: 0;
+    font-size: .6875rem;
+    color: var(--af-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.af-savings-before { text-decoration: line-through; opacity: .7; }
+.af-savings-arrow  { opacity: .55; }
+.af-savings-after  { font-weight: 600; color: var(--af-text); }
+
+.af-savings-badge {
+    padding: .0625rem .3125rem;
+    font-size: .625rem;
+    font-weight: 700;
+    color: var(--af-success);
+    background: color-mix(in srgb, var(--af-success) 15%, transparent);
+    border-radius: 999px;
+    cursor: default;
+}
+
+/* The file did shrink, but not as far as the budget asked for. */
+.af-savings-badge.af-savings-missed {
+    color: var(--af-warning);
+    background: color-mix(in srgb, var(--af-warning) 15%, transparent);
+}
+
+/* ==========================================================================
+   Multiple files
+   ========================================================================== */
+
+.af-file-grid {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+    padding: .5rem;
+}
+
+.af-file-grid-scroll {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    grid-auto-rows: min-content;
+    gap: .375rem;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+
+    /* Reserve the scrollbar's width so it never sits on top of a tile, and so
+       tiles do not shift when the grid becomes scrollable. */
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    padding-right: .125rem;
+}
+
+.af-file-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: var(--af-surface-alt);
+    border: 1px solid var(--af-border);
+    border-radius: var(--af-radius-sm);
+    animation: af-pop 200ms var(--af-ease);
+}
+
+.af-tile-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Non-image tiles show the extension, which is the only useful thing at 52px. */
+.af-tile-ext {
+    font-size: .5625rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: currentColor;
+}
+
+.af-tile-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(0, 0, 0, .6);
+    border: none;
+    border-radius: 50%;
+    opacity: 0;
+    transition: var(--af-speed) var(--af-ease);
+}
+
+/* Revealed on hover, but always present for keyboard and touch. */
+.af-file-tile:hover .af-tile-remove,
+.af-tile-remove:focus-visible { opacity: 1; }
+.af-tile-remove:hover { background: var(--af-danger); transform: rotate(90deg); }
+
+@media (hover: none) {
+    .af-tile-remove { opacity: 1; }
+}
+
+.af-file-grid-caption {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+    margin: 0;
+    padding: 0 .125rem;
+    font-size: .6875rem;
+    font-weight: 600;
+    color: var(--af-text);
+}
+
+.af-grid-total {
+    font-weight: 500;
+    color: var(--af-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Progress rail
+   ========================================================================== */
+
+.af-progress-rail {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 6;
+    height: 3px;
+    background: color-mix(in srgb, var(--af-accent) 18%, transparent);
+}
+
+.af-progress-fill {
+    height: 100%;
+    background: var(--af-accent);
+    border-radius: 0 999px 999px 0;
+    transition: width 120ms linear;
+}
+
+/* ==========================================================================
+   Clear button
+   ========================================================================== */
+
+.af-clear-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    cursor: pointer;
+    color: var(--af-surface);
+    background: var(--af-text);
+    border: 2px solid var(--af-surface);
+    border-radius: 50%;
+    box-shadow: var(--af-shadow);
+    transition: transform var(--af-speed) var(--af-ease), background-color var(--af-speed) var(--af-ease);
+}
+
+/*
+ * The cross turns a quarter-turn into a "+" and back. It is the one flourish
+ * in the component, and it earns its place: the button is small and sits over
+ * a busy preview, so the rotation is what makes it read as interactive.
+ */
+.af-clear-btn:hover,
+.af-clear-btn:focus-visible {
+    background: var(--af-danger);
+    transform: rotate(90deg) scale(1.1);
+}
+
+.af-clear-btn:active { transform: rotate(90deg) scale(.94); }
+.af-clear-btn:focus-visible { outline: 2px solid var(--af-accent); outline-offset: 2px; }
+
+.af-clear-btn svg {
+    width: 13px;
+    height: 13px;
+    transition: transform var(--af-speed) var(--af-ease);
+}
+
+/* Appears with the file rather than blinking into place. */
+.af-clear-btn { animation: af-pop var(--af-speed) var(--af-ease); }
+
+/* ==========================================================================
+   Status overlay
+   ========================================================================== */
+
+.af-status-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: .75rem;
+    opacity: 0;
+    visibility: hidden;
+    background: var(--af-overlay);
+    backdrop-filter: blur(2px);
+    transition: opacity var(--af-speed) var(--af-ease), visibility var(--af-speed) var(--af-ease);
+}
+
+.af-status-overlay.active { opacity: 1; visibility: visible; }
+
+/*
+ * The resting "ready to upload" hint. Deliberately not an overlay — dimming
+ * the preview of the file the message is about reads as a failure.
+ */
+.af-ready-pill {
+    position: absolute;
+    top: .5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    padding: .1875rem .5rem;
+    font-size: .6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--af-accent-contrast);
+    background: var(--af-accent);
+    border-radius: 999px;
+    box-shadow: var(--af-shadow);
+    pointer-events: none;
+}
+
+.af-upload-spinner-card,
+.af-status-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    max-width: 100%;
+}
+
+.af-status-card { flex-direction: row; gap: .5rem; }
+
+/*
+ * Short and inline dropzones cannot fit the 54px ring plus a caption — it
+ * overflowed the box and got clipped. Below 120px of height the overlay lays
+ * out as a single row and the bottom rail carries the progress instead.
+ */
+.af-status-overlay.is-compact { padding: .375rem .625rem; }
+.af-status-overlay.is-compact .af-upload-spinner-card { flex-direction: row; gap: .5rem; }
+.af-status-overlay.is-compact .af-upload-status-text { font-size: .6875rem; font-variant-numeric: tabular-nums; }
+
+.af-spinner-container {
+    position: relative;
+    width: 54px;
+    height: 54px;
+}
+
+.af-circular-spinner {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.af-spinner-track    { stroke: var(--af-border); }
+.af-spinner-progress {
+    stroke: var(--af-accent);
+    stroke-linecap: round;
+    transition: stroke-dasharray var(--af-speed) linear;
+}
+
+.af-spinner-percent {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .6875rem;
+    font-weight: 700;
+    color: var(--af-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.af-upload-status-text {
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--af-muted);
+}
+
+.af-cancel-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    cursor: pointer;
+    color: var(--af-muted);
+    background: transparent;
+    border: 1px solid var(--af-border);
+    border-radius: 50%;
+    transition: var(--af-speed) var(--af-ease);
+}
+
+.af-cancel-upload:hover { color: var(--af-danger); border-color: var(--af-danger); }
+
+.af-status-message {
+    font-size: .75rem;
+    font-weight: 600;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.af-state-info    .af-status-message { color: var(--af-text); }
+.af-state-success .af-status-message { color: var(--af-success); }
+.af-state-error   .af-status-message { color: var(--af-danger); }
+
+.af-state-success .af-status-icon { color: var(--af-success); }
+.af-state-error   .af-status-icon { color: var(--af-danger); }
+.af-status-icon svg { width: 18px; height: 18px; }
+
+.af-error-text {
+    display: block;
+    margin-top: .375rem;
+    font-family: var(--af-font);
+    font-size: .75rem;
+    color: var(--af-danger);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.af-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    padding: .4375rem .75rem;
+    font: inherit;
+    font-size: .8125rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--af-text);
+    background: var(--af-surface-alt);
+    border: 1px solid var(--af-border);
+    border-radius: var(--af-radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--af-speed) var(--af-ease);
+}
+
+.af-btn:hover:not(:disabled) { border-color: var(--af-border-strong); }
+.af-btn:focus-visible { outline: 2px solid var(--af-accent); outline-offset: 2px; }
+.af-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.af-btn.active {
+    color: var(--af-accent-contrast);
+    background: var(--af-accent);
+    border-color: var(--af-accent);
+}
+
+.af-btn-primary {
+    color: var(--af-accent-contrast);
+    background: var(--af-accent);
+    border-color: var(--af-accent);
+}
+
+.af-btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+.af-icon-btn { width: 36px; height: 36px; padding: 0; }
+.af-icon-btn svg { width: 20px; height: 20px; }
+
+/* The manual-upload trigger floats over the dropzone. */
+.af-upload-btn {
+    position: absolute;
+    right: .5rem;
+    bottom: .5rem;
+    z-index: 4;
+    box-shadow: var(--af-shadow);
+}
+
+/* ==========================================================================
+   Editor modal
+   ========================================================================== */
+
+#af-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: none;
+    flex-direction: column;
+    font-family: var(--af-font);
+    color: var(--af-text);
+    background: var(--af-scrim);
+    backdrop-filter: blur(6px);
+    animation: af-modal-in 220ms var(--af-ease);
+}
+
+#af-modal.active { display: flex; }
+
+.af-modal-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .875rem 1.25rem;
+    color: #f4f6f8;
+}
+
+.af-modal-title {
+    font-size: .8125rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.af-modal-close {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 1.375rem;
+    line-height: 1;
+    color: #f4f6f8;
+    background: rgba(255, 255, 255, .1);
+    border-color: transparent;
+}
+
+.af-modal-close:hover { background: rgba(255, 255, 255, .2); }
+
+.af-canvas-wrapper {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 1rem;
+    overflow: hidden;
+    border-radius: var(--af-radius);
+    background: #000;
+}
+
+.af-canvas-wrapper canvas { display: block; touch-action: none; }
+
+.af-rot-val {
+    position: absolute;
+    top: .625rem;
+    right: .625rem;
+    padding: .25rem .5rem;
+    font-size: .6875rem;
+    font-weight: 600;
+    color: #f4f6f8;
+    background: rgba(0, 0, 0, .55);
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.af-controls {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    padding: 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.af-ratio-group,
+.af-btn-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.af-ratio-group::-webkit-scrollbar,
+.af-btn-group::-webkit-scrollbar { display: none; }
+
+/* Editor chrome sits on the dark scrim, not on the page surface. */
+#af-modal .af-btn {
+    color: #e8ebef;
+    background: rgba(255, 255, 255, .08);
+    border-color: rgba(255, 255, 255, .14);
+}
+
+#af-modal .af-btn:hover:not(:disabled) { background: rgba(255, 255, 255, .16); }
+
+#af-modal .af-btn.active,
+#af-modal .af-btn-primary {
+    color: var(--af-accent-contrast);
+    background: var(--af-accent);
+    border-color: var(--af-accent);
+}
+
+#af-modal .af-btn-primary {
+    width: 100%;
+    padding: .8125rem;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.af-circle-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    color: #e8ebef;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--af-speed) var(--af-ease);
+}
+
+.af-circle-toggle.visible { display: inline-flex; }
+.af-circle-toggle.active {
+    color: var(--af-accent-contrast);
+    background: var(--af-accent);
+    border-color: var(--af-accent);
+}
+
+/* ==========================================================================
+   Motion
+   --------------------------------------------------------------------------
+   Short, small-amplitude, and only where it carries meaning: something
+   arrived, something is working, something can be pressed. Every one of these
+   is switched off under prefers-reduced-motion at the end of the file.
+   ========================================================================== */
+
+@keyframes af-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes af-pop {
+    from { opacity: 0; transform: scale(.6); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes af-rise {
+    from { opacity: 0; transform: translate(-50%, -6px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes af-reveal {
+    from { opacity: 0; transform: scale(1.02); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes af-float {
+    0%, 100% { transform: translateY(-1px); }
+    50%      { transform: translateY(-6px); }
+}
+
+@keyframes af-modal-in {
+    from { opacity: 0; transform: scale(.985); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* The picked image fades up rather than snapping in. */
+.af-preview-thumb { animation: af-reveal 260ms var(--af-ease); }
+.af-preview-icon  { animation: af-pop 220ms var(--af-ease); }
+.af-ready-pill    { animation: af-rise 220ms var(--af-ease); }
+.af-status-card   { animation: af-pop 200ms var(--af-ease); }
+
+/* Pressed feedback on every control. */
+.af-btn:active:not(:disabled) { transform: translateY(1px); }
+.af-cancel-upload:active { transform: scale(.92); }
+
+.af-dropzone:active { border-color: var(--af-accent); }
+
+@media (min-width: 720px) {
+    .af-canvas-wrapper { margin: 0 auto; width: min(880px, 100% - 2rem); }
+    .af-controls { width: min(880px, 100% - 2rem); margin: 0 auto; }
+    #af-modal .af-btn-primary { width: auto; align-self: center; min-width: 220px; }
+}
+
+/*
+ * Everything above is decoration. Anyone who has asked their OS for less
+ * motion gets none of it — including the infinite drag-active float, which is
+ * the one loop in the file.
+ */
+@media (prefers-reduced-motion: reduce) {
+    .af-uploader-wrapper,
+    .af-uploader-wrapper *,
+    #af-modal,
+    #af-modal * {
+        animation: none !important;
+        transition-duration: .01ms !important;
+    }
+
+    .af-clear-btn:hover,
+    .af-clear-btn:focus-visible { transform: none; }
+}

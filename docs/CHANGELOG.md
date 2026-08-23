@@ -4,6 +4,94 @@ All notable changes to `artflow-studio/uploader` are recorded here.
 
 ---
 
+## [0.2.0] — 2026-08-24
+
+A rebuild of the Blade and JavaScript layers. The public API is unchanged:
+`<x-af-uploader>`, `@afUploaderAssets` and `Traits\WithAFuploader` all still
+work. See `AUDIT.md` for the findings behind each change.
+
+### Breaking
+
+- **Assets moved.** `css/main.css` + `js/index.js` became `css/uploader.css` +
+  `js/uploader.js`. Run `php artisan af-uploader:publish --force`; it lists the
+  stale files it can no longer manage.
+- **`auto-upload="false"` now works.** It was inert before, so any uploader
+  passing it starts waiting for the Upload button.
+- **Removed:** `uploader-v2.blade.php`, the `laravel/` prototype, the `html/`
+  demo, `UploaderTest1-6`, and the `af-uploader:test` / `af-uploader:update-assets`
+  commands. None were reachable or documented.
+
+### Fixed
+
+- Instance ids are stable across Livewire updates. They previously hashed the
+  request URI, which is the page URL on first render and `/livewire/update`
+  afterwards, so the `wire:key` changed on the first interaction.
+- Two components binding the same property name no longer overwrite each
+  other's preview. The page-global cache keyed on that name is gone.
+- One click on a dropzone opens one file dialog, not two.
+- Cancelling an upload aborts the request instead of only changing the label.
+- Clearing a dropzone releases the temporary file *and* its `.json` sidecar.
+- Removing one file from a multi-file property names the file the *server*
+  knows about, so the right upload is released.
+- "Uploaded" clears after one second instead of lingering over the file it
+  refers to.
+- `convert`, `target-size` and the physical-unit props reach the encoder; they
+  were emitted as `data-af-*` attributes nothing read.
+- EXIF orientation is applied, so portrait phone photos crop upright.
+- `.json` files can be uploaded.
+- `height` renders the height you asked for — the stylesheet set no
+  `box-sizing`, so padding added 66px to every box.
+- Duplicate `isImageFile`, and four conflicting `.af-dz-circled` rules, removed.
+
+### Added
+
+- `config/af-uploader.php` — disk, directory, component defaults, image
+  pipeline, editor and validation rules.
+- Server-side validation in `storeUpload()`: size ceiling, accept matching, an
+  extension blocklist covering double extensions, and SVG blocked by default.
+- `deleteStoredUpload()` refuses absolute paths, foreign URLs and traversal
+  segments. Its predecessor did not.
+- `compress="40%"` — a size budget expressed as a share of the original,
+  alongside the absolute `target-size`. Set either or both; the tighter applies.
+- The encoder now trades resolution as well as quality to reach a size budget.
+  Quality alone cannot shrink a detailed photo far enough, and the old pass
+  returned whatever it had and reported the shortfall as a success.
+- `show-savings` reports `1.4 MB → 220 KB (−84%)` after re-encoding. Opt-in, and
+  marks the badge amber when a budget could not be reached.
+- `multiple` renders a scrollable tile grid: every file visible, each removable
+  on its own, with the count and combined size in the caption. It previously
+  showed one preview and the words "3 files".
+- A progress rail along the bottom edge, and a single-row status layout for
+  dropzones under 120px tall — the 54px progress ring overflowed an inline
+  uploader and was clipped.
+- `storeUploads()` for batches; returns stored paths and rejection messages.
+- Dark mode that adapts to the host. `core/theme.js` reads Bootstrap's
+  `data-bs-theme`, Tailwind's `.dark`, `data-theme`, `data-color-mode` and the
+  rest from `<html>` or `<body>`, falls back to the OS only when the app is
+  silent, and keeps watching so an in-page toggle carries the uploader with it.
+  Resolved to `data-af-theme`, which is all the stylesheet reads. Overridable
+  with the `theme` config key or `window.AFUploaderTheme.set()`.
+- Motion: the clear button spins on hover, previews fade up, the drag arrow
+  floats. All disabled under `prefers-reduced-motion`.
+- `/af-uploader/testbed` — every configuration on one page, local and testing
+  only, switchable via config.
+- `af-uploader:install`, and `af-uploader:publish` which walks the asset
+  directory and names orphaned files.
+- `CONTRIBUTING.md`, `SECURITY.md`, issue and pull-request templates, and a CI
+  matrix across PHP 8.2-8.4, Laravel 11-12 and Livewire 3-4.
+- A test suite that runs: 96 tests on Testbench.
+
+### Changed
+
+- Livewire 3 and 4 are both supported; `illuminate/support` is bounded to
+  `^11.0|^12.0`.
+- The editor owns its DOM, is dynamically imported on first use, and returns a
+  promise rather than dispatching global window events.
+- `Concerns\WithUploader` is the canonical trait. `Traits\WithAFuploader`
+  remains as a deprecated shim.
+
+---
+
 ## [0.1.2] — Unreleased
 
 ### Cropper Modal Visibility Fix (Critical)
